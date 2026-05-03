@@ -12,8 +12,8 @@ export default function App() {
   const [loading, setLoading] = useState(true)
 
   // Emails con rol especial (cámbialos por los reales)
-  const ADMIN_EMAILS = ['admin@vetshift.com']
-  const COORD_EMAILS = ['coordinador@vetshift.com']
+  const ADMIN_EMAILS = ['daniel200430@hotmail.com']
+  const COORD_EMAILS = ['02468ssc@gmail.com']
 
   const getRole = (email: string): UserRole => {
     if (ADMIN_EMAILS.includes(email)) return 'admin'
