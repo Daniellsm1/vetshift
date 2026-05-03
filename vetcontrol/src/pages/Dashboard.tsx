@@ -156,4 +156,35 @@ export default function Dashboard({ session }: Props) {
                       <div style={{ fontSize: '12px', color: '#888' }}>{turno ? turno.turno : 'Sin asignación'}</div>
                     </div>
                     {!turno && (
-                      <spa
+                      <span style={{ padding: '4px 12px', background: '#EAF3DE', color: '#3B6D11', borderRadius: '20px', fontSize: '12px', fontWeight: '500' }}>
+                        Free
+                      </span>
+                    )}
+                  </div>
+                  {turno && (
+                    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                      {DIAS.map(dia => (
+                        <span key={dia} style={{ padding: '3px 8px', background: '#E1F5EE', color: '#085041', border: '0.5px solid #9FE1CB', borderRadius: '20px', fontSize: '11px', fontWeight: '500' }}>
+                          {dia}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+
+        </div>
+
+        {/* Nota */}
+        <div style={{ background: '#E6F1FB', padding: '10px 14px', borderTop: '0.5px solid #B5D4F4', margin: '0 0 16px' }}>
+          <div style={{ fontSize: '11px', color: '#185FA5', lineHeight: '1.5' }}>
+            <strong>Nota:</strong> Esta pantalla es de solo lectura. Para modificar tus servicios, contacta al coordinador.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
