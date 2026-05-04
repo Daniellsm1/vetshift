@@ -10,6 +10,7 @@ export default function App() {
   const [session, setSession] = useState<any>(null)
   const [role, setRole] = useState<UserRole>(null)
   const [loading, setLoading] = useState(true)
+  const [previewDashboard, setPreviewDashboard] = useState(false)
 
   // Emails con rol especial (cámbialos por los reales)
   const ADMIN_EMAILS = ['daniel200430@hotmail.com']
@@ -58,7 +59,10 @@ export default function App() {
 
   // Con sesión → mostrar pantalla según rol
   if (role === 'coordinador' || role === 'admin') {
-    return <CoordinatorDashboard session={session} role={role} />
+    if (previewDashboard) {
+      return <Dashboard session={session} onBack={() => setPreviewDashboard(false)} />
+    }
+    return <CoordinatorDashboard session={session} role={role} onPreviewDashboard={() => setPreviewDashboard(true)} />
   }
 
   return <Dashboard session={session} />

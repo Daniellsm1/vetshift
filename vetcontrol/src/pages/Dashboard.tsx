@@ -6,8 +6,14 @@ interface Turno {
   turno: string
 }
 
+interface TurnoInfo {
+  usuario: string
+  turno: string
+}
+
 interface Props {
   session: any
+  onBack?: () => void
 }
 
 const SERVICIOS = [
@@ -18,10 +24,10 @@ const SERVICIOS = [
 
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
-export default function Dashboard({ session }: Props) {
+export default function Dashboard({ session, onBack }: Props) {
   const [turnos, setTurnos] = useState<Turno[]>([])
-  const [veterinario, setVeterinario] = useState<string>('')
-  const [administrador, setAdministrador] = useState<string>('')
+  const [veterinario, setVeterinario] = useState<TurnoInfo | null>(null)
+  const [administrador, setAdministrador] = useState<TurnoInfo | null>(null)
   const [loading, setLoading] = useState(true)
 
   const email = session?.user?.email
@@ -35,7 +41,6 @@ export default function Dashboard({ session }: Props) {
   const fetchTurnos = async () => {
     setLoading(true)
 
-    // Obtener semana actual (lunes de esta semana)
     const hoy = new Date()
     const lunes = new Date(hoy)
     lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7))
@@ -48,7 +53,7 @@ export default function Dashboard({ session }: Props) {
       .eq('semana', semana)
       .eq('usuario', fullName)
 
-    // Veterinario de turno
+    // Veterinario de turno (desde Excel, independiente del usuario)
     const { data: vet } = await supabase
       .from('turnos')
       .select('usuario, turno')
@@ -56,16 +61,17 @@ export default function Dashboard({ session }: Props) {
       .eq('servicio', 'veterinario')
       .limit(1)
 
-    // Administrador
+    // Administrador (desde Excel, independiente del usuario)
     const { data: admin } = await supabase
-      .from('roles')
-      .select('email')
-      .eq('role', 'admin')
+      .from('turnos')
+      .select('usuario, turno')
+      .eq('semana', semana)
+      .eq('servicio', 'administrador')
       .limit(1)
 
     if (misTurnos) setTurnos(misTurnos)
-    if (vet && vet.length > 0) setVeterinario(`${vet[0].usuario} · ${vet[0].turno}`)
-    if (admin && admin.length > 0) setAdministrador(admin[0].email)
+    setVeterinario(vet && vet.length > 0 ? { usuario: vet[0].usuario, turno: vet[0].turno } : null)
+    setAdministrador(admin && admin.length > 0 ? { usuario: admin[0].usuario, turno: admin[0].turno } : null)
 
     setLoading(false)
   }
@@ -78,7 +84,6 @@ export default function Dashboard({ session }: Props) {
     await supabase.auth.signOut()
   }
 
-  // Fecha semana actual
   const hoy = new Date()
   const lunes = new Date(hoy)
   lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7))
@@ -105,9 +110,16 @@ export default function Dashboard({ session }: Props) {
               <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>Bienvenido de vuelta</div>
               <div style={{ fontSize: '18px', fontWeight: '500', color: 'white' }}>{nombre}</div>
             </div>
-            <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', color: 'white', cursor: 'pointer', fontSize: '16px' }}>
-              ↩
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {onBack && (
+                <button onClick={onBack} title="Volver al panel de coordinador" style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', color: 'white', cursor: 'pointer', fontSize: '16px' }}>
+                  ←
+                </button>
+              )}
+              <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', color: 'white', cursor: 'pointer', fontSize: '16px' }}>
+                ↩
+              </button>
+            </div>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: '12px', padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
@@ -123,25 +135,11 @@ export default function Dashboard({ session }: Props) {
         {/* Body */}
         <div style={{ padding: '16px' }}>
 
-          {/* Siempre visible: veterinario y admin */}
-          {veterinario && (
-            <div style={{ borderLeft: '3px solid #5DCAA5', padding: '10px 12px', background: '#E1F5EE', borderRadius: '0 8px 8px 0', marginBottom: '10px' }}>
-              <div style={{ fontSize: '10px', color: '#085041', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Veterinario de turno</div>
-              <div style={{ fontSize: '13px', color: '#0F6E56', fontWeight: '500' }}>{veterinario}</div>
-            </div>
-          )}
-          {administrador && (
-            <div style={{ borderLeft: '3px solid #B5D4F4', padding: '10px 12px', background: '#E6F1FB', borderRadius: '0 8px 8px 0', marginBottom: '16px' }}>
-              <div style={{ fontSize: '10px', color: '#185FA5', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Administrador</div>
-              <div style={{ fontSize: '13px', color: '#185FA5', fontWeight: '500' }}>{administrador}</div>
-            </div>
-          )}
-
           <div style={{ fontSize: '13px', fontWeight: '500', color: '#888', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Mis servicios asignados
           </div>
 
-          {/* Tarjetas de servicio */}
+          {/* Tarjetas servicios del usuario actual */}
           {SERVICIOS.map(servicio => {
             const turno = getTurno(servicio.key)
             return (
@@ -175,6 +173,53 @@ export default function Dashboard({ session }: Props) {
               </div>
             )
           })}
+
+          {/* Separador */}
+          <div style={{ fontSize: '13px', fontWeight: '500', color: '#888', margin: '16px 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Personal de referencia
+          </div>
+
+          {/* Tarjeta Veterinario — siempre visible */}
+          <div style={{ background: 'white', borderRadius: '12px', marginBottom: '10px', overflow: 'hidden', border: '0.5px solid #eee' }}>
+            <div style={{ height: '3px', background: '#1D9E75' }} />
+            <div style={{ padding: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#E1F5EE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                🩺
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '15px', fontWeight: '500', color: '#1a1a1a' }}>Veterinario de turno</div>
+                <div style={{ fontSize: '12px', color: veterinario ? '#0F6E56' : '#bbb' }}>
+                  {veterinario ? veterinario.usuario : 'No asignado'}
+                </div>
+              </div>
+              {veterinario && (
+                <span style={{ padding: '4px 10px', background: '#E1F5EE', color: '#085041', borderRadius: '20px', fontSize: '11px', fontWeight: '500' }}>
+                  {veterinario.turno}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Tarjeta Administrador — siempre visible */}
+          <div style={{ background: 'white', borderRadius: '12px', marginBottom: '10px', overflow: 'hidden', border: '0.5px solid #eee' }}>
+            <div style={{ height: '3px', background: '#378ADD' }} />
+            <div style={{ padding: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#E6F1FB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                🗂️
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '15px', fontWeight: '500', color: '#1a1a1a' }}>Administrador</div>
+                <div style={{ fontSize: '12px', color: administrador ? '#185FA5' : '#bbb' }}>
+                  {administrador ? administrador.usuario : 'No asignado'}
+                </div>
+              </div>
+              {administrador && (
+                <span style={{ padding: '4px 10px', background: '#E6F1FB', color: '#185FA5', borderRadius: '20px', fontSize: '11px', fontWeight: '500' }}>
+                  {administrador.turno}
+                </span>
+              )}
+            </div>
+          </div>
 
         </div>
 

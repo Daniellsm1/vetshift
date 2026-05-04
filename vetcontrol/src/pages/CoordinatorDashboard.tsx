@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx'
 interface Props {
   session: any
   role: string
+  onPreviewDashboard: () => void
 }
 
 interface TurnoExcel {
@@ -13,9 +14,9 @@ interface TurnoExcel {
   turno: string
 }
 
-const SERVICIOS_VALIDOS = ['canil_principal', 'canil_secundario', 'bombero']
+const SERVICIOS_VALIDOS = ['canil_principal', 'canil_secundario', 'bombero', 'veterinario', 'administrador']
 
-export default function CoordinatorDashboard({ session, role }: Props) {
+export default function CoordinatorDashboard({ session, role, onPreviewDashboard }: Props) {
   const [archivo, setArchivo] = useState<File | null>(null)
   const [turnos, setTurnos] = useState<TurnoExcel[]>([])
   const [loading, setLoading] = useState(false)
@@ -75,10 +76,16 @@ export default function CoordinatorDashboard({ session, role }: Props) {
     const semana = lunes.toISOString().split('T')[0]
 
     // Borrar turnos anteriores de esta semana
-    await supabase
+    const { error: deleteError } = await supabase
       .from('turnos')
       .delete()
       .eq('semana', semana)
+
+    if (deleteError) {
+      setError(`Error al limpiar turnos anteriores: ${deleteError.message}`)
+      setLoading(false)
+      return
+    }
 
     // Insertar los nuevos turnos
     const { error } = await supabase
@@ -86,7 +93,7 @@ export default function CoordinatorDashboard({ session, role }: Props) {
       .insert(turnos.map(t => ({ ...t, semana })))
 
     if (error) {
-      setError('Error al guardar los turnos. Intenta de nuevo.')
+      setError(`Error al insertar turnos: ${error.message}`)
     } else {
       setMensaje(`✓ ${turnos.length} turnos cargados correctamente para la semana del ${semana}`)
       setArchivo(null)
@@ -115,6 +122,13 @@ export default function CoordinatorDashboard({ session, role }: Props) {
               <span style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.2)', color: 'white', borderRadius: '20px', fontSize: '11px' }}>
                 {role}
               </span>
+              <button
+                onClick={onPreviewDashboard}
+                title="Ver dashboard de empleado"
+                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', color: 'white', cursor: 'pointer', fontSize: '16px' }}
+              >
+                👁
+              </button>
               <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', color: 'white', cursor: 'pointer', fontSize: '16px' }}>
                 ↩
               </button>
