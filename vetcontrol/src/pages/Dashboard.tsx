@@ -25,7 +25,8 @@ export default function Dashboard({ session }: Props) {
   const [loading, setLoading] = useState(true)
 
   const email = session?.user?.email
-  const nombre = email?.split('@')[0] || 'Usuario'
+  const fullName = localStorage.getItem('userFullName') || ''
+  const nombre = fullName || email?.split('@')[0] || 'Usuario'
 
   useEffect(() => {
     fetchTurnos()
@@ -40,12 +41,12 @@ export default function Dashboard({ session }: Props) {
     lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7))
     const semana = lunes.toISOString().split('T')[0]
 
-    // Turnos del usuario actual
+    // Turnos del usuario actual (por nombre completo ingresado en login)
     const { data: misTurnos } = await supabase
       .from('turnos')
       .select('servicio, turno')
       .eq('semana', semana)
-      .eq('usuario', email)
+      .eq('usuario', fullName)
 
     // Veterinario de turno
     const { data: vet } = await supabase

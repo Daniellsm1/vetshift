@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import dogLogo from '../assets/logo.png'
 
 export default function Login() {
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -12,10 +13,29 @@ export default function Login() {
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    // Validar que el nombre completo no esté vacío
+    if (!fullName.trim()) {
+      setError('El nombre completo es requerido')
+      setLoading(false)
+      return
+    }
+
+    const { error, data } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError('Correo o contraseña incorrectos')
+      setLoading(false)
+      return
+    }
+
+    // Guardar el nombre completo en localStorage para usarlo después
+    if (data.user) {
+      localStorage.setItem('userFullName', fullName.trim())
+      
+      // Opcionalmente, también guardarlo en el perfil de Supabase
+      await supabase.auth.updateUser({
+        data: { full_name: fullName.trim() }
+      })
     }
 
     setLoading(false)
@@ -33,6 +53,20 @@ export default function Login() {
 
         {/* Formulario */}
         <div style={{ padding: '28px' }}>
+          {/* NUEVO CAMPO: Nombre Completo */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ fontSize: '12px', color: '#666', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '6px' }}>
+              Nombre Completo
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
+              placeholder="Nombre completo"
+              style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+
           <div style={{ marginBottom: '16px' }}>
             <label style={{ fontSize: '12px', color: '#666', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '6px' }}>
               Correo electrónico
@@ -66,7 +100,7 @@ export default function Login() {
           )}
 
           <div style={{ fontSize: '12px', color: '#888', padding: '10px 12px', background: '#f5f5f0', borderRadius: '8px', borderLeft: '3px solid #1D9E75', marginBottom: '20px', lineHeight: '1.5' }}>
-            Los roles <strong>Admin</strong> y <strong>Coordinador</strong> se asignan por correo. El resto ingresa como <strong>Empleado</strong>.
+            Ingresa tu <strong>nombre completo</strong> exactamente como aparece en el archivo de turnos.
           </div>
 
           <button
