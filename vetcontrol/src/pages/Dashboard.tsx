@@ -30,6 +30,14 @@ export default function Dashboard({ session, onBack }: Props) {
   const [veterinario, setVeterinario] = useState<TurnoInfo | null>(null)
   const [administrador, setAdministrador] = useState<TurnoInfo | null>(null)
   const [loading, setLoading] = useState(true)
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [isInstallable, setIsInstallable] = useState(false)
+  const [showIOSHint, setShowIOSHint] = useState(false)
+
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  const isStandalone =
+    ('standalone' in navigator && (navigator as any).standalone === true) ||
+    window.matchMedia('(display-mode: standalone)').matches
 
   const email = session?.user?.email
   const fullName = localStorage.getItem('userFullName') || ''
@@ -39,6 +47,29 @@ export default function Dashboard({ session, onBack }: Props) {
   useEffect(() => {
     fetchTurnos()
   }, [])
+
+  useEffect(() => {
+    if (isStandalone) return
+    if (isIOS) { setIsInstallable(true); return }
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setIsInstallable(true)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstall = async () => {
+    if (isIOS) { setShowIOSHint(v => !v); return }
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null)
+      setIsInstallable(false)
+    }
+  }
 
   const fetchTurnos = async () => {
     setLoading(true)
@@ -231,6 +262,50 @@ export default function Dashboard({ session, onBack }: Props) {
             <strong>Nota:</strong> Esta pantalla es de solo lectura. Para modificar tus servicios, contacta al coordinador.
           </div>
         </div>
+
+        {/* Botón instalar PWA */}
+        {isInstallable && !isStandalone && (
+          <div style={{ padding: '0 16px 32px' }}>
+            <button
+              onClick={handleInstall}
+              style={{
+                width: '100%', padding: '13px',
+                background: 'linear-gradient(135deg, #0F6E56, #1D9E75)',
+                color: 'white', border: 'none', borderRadius: '12px',
+                fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                boxShadow: '0 4px 12px rgba(15,110,86,0.3)',
+              }}
+            >
+              <span style={{ fontSize: '18px' }}>📲</span>
+              {isIOS ? 'Cómo instalar en pantalla de inicio' : 'Instalar en pantalla de inicio'}
+            </button>
+
+            {/* Instrucciones iOS */}
+            {showIOSHint && isIOS && (
+              <div style={{ marginTop: '12px', background: 'white', borderRadius: '12px', padding: '14px', border: '0.5px solid #eee', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f5f5f0', borderRadius: '10px', padding: '10px 12px' }}>
+                  <span style={{ fontSize: '18px', flexShrink: 0 }}>1️⃣</span>
+                  <span style={{ fontSize: '13px', color: '#444' }}>
+                    Tocá el botón <strong>Compartir</strong> <span style={{ fontSize: '15px' }}>⬆</span> en la barra de Safari
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f5f5f0', borderRadius: '10px', padding: '10px 12px' }}>
+                  <span style={{ fontSize: '18px', flexShrink: 0 }}>2️⃣</span>
+                  <span style={{ fontSize: '13px', color: '#444' }}>
+                    Seleccioná <strong>"Añadir a la pantalla de inicio"</strong>
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f5f5f0', borderRadius: '10px', padding: '10px 12px' }}>
+                  <span style={{ fontSize: '18px', flexShrink: 0 }}>3️⃣</span>
+                  <span style={{ fontSize: '13px', color: '#444' }}>
+                    Tocá <strong>"Agregar"</strong> arriba a la derecha
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </div>
