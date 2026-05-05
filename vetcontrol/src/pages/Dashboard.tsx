@@ -33,6 +33,7 @@ export default function Dashboard({ session, onBack }: Props) {
 
   const email = session?.user?.email
   const fullName = localStorage.getItem('userFullName') || ''
+  const normalizedName = fullName.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
   const nombre = fullName || email?.split('@')[0] || 'Usuario'
 
   useEffect(() => {
@@ -52,7 +53,7 @@ export default function Dashboard({ session, onBack }: Props) {
       .from('turnos')
       .select('servicio, turno')
       .eq('semana', semana)
-      .eq('usuario', fullName)
+      .eq('usuario', normalizedName)
 
     // Veterinario de turno (desde Excel, independiente del usuario)
     const { data: vet } = await supabase

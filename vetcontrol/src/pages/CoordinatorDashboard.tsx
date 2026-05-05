@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import * as XLSX from 'xlsx'
 
@@ -64,7 +64,7 @@ export default function CoordinatorDashboard({ session, role, onPreviewDashboard
       // Recorrer filas (saltar la primera si es encabezado)
       filas.forEach((fila, index) => {
         if (index === 0) return // saltar encabezado
-        const usuario = String(fila[0] || '').trim().toLowerCase()
+        const usuario = String(fila[0] || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
         const servicio = String(fila[1] || '').trim().toLowerCase().replace(/ /g, '_')
         const turno = String(fila[2] || '').trim()
 
