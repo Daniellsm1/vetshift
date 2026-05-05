@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import * as XLSX from 'xlsx'
 
@@ -14,6 +14,13 @@ interface TurnoExcel {
   turno: string
 }
 
+interface UsuarioRegistrado {
+  id: string
+  email: string
+  full_name: string | null
+  created_at: string
+}
+
 const SERVICIOS_VALIDOS = ['canil_principal', 'canil_secundario', 'bombero', 'veterinario', 'administrador']
 
 export default function CoordinatorDashboard({ session, role, onPreviewDashboard }: Props) {
@@ -22,9 +29,20 @@ export default function CoordinatorDashboard({ session, role, onPreviewDashboard
   const [loading, setLoading] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
+  const [usuarios, setUsuarios] = useState<UsuarioRegistrado[]>([])
+  const [loadingUsuarios, setLoadingUsuarios] = useState(true)
 
   const email = session?.user?.email
   const nombre = email?.split('@')[0] || 'Coordinador'
+
+  useEffect(() => {
+    const fetchUsuarios = async () => {
+      const { data } = await supabase.rpc('get_registered_users')
+      if (data) setUsuarios(data)
+      setLoadingUsuarios(false)
+    }
+    fetchUsuarios()
+  }, [])
 
   const handleArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -75,11 +93,11 @@ export default function CoordinatorDashboard({ session, role, onPreviewDashboard
     lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7))
     const semana = lunes.toISOString().split('T')[0]
 
-    // Borrar turnos anteriores de esta semana
+    // Borrar todos los turnos existentes antes de insertar los nuevos
     const { error: deleteError } = await supabase
       .from('turnos')
       .delete()
-      .eq('semana', semana)
+      .gte('semana', '1900-01-01')
 
     if (deleteError) {
       setError(`Error al limpiar turnos anteriores: ${deleteError.message}`)
@@ -203,35 +221,36 @@ export default function CoordinatorDashboard({ session, role, onPreviewDashboard
             </button>
           </div>
 
-          {/* Formato del Excel */}
+          {/* Usuarios registrados */}
+          <div style={{ fontSize: '13px', fontWeight: '500', color: '#888', margin: '16px 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Usuarios registrados
+          </div>
+
           <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '0.5px solid #eee' }}>
-            <div style={{ fontSize: '13px', fontWeight: '500', color: '#333', marginBottom: '10px' }}>
-              Formato esperado del Excel
-            </div>
-            <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f5f5f0' }}>
-                  <th style={{ padding: '6px 8px', textAlign: 'left', color: '#666', fontWeight: '500' }}>Columna 1</th>
-                  <th style={{ padding: '6px 8px', textAlign: 'left', color: '#666', fontWeight: '500' }}>Columna 2</th>
-                  <th style={{ padding: '6px 8px', textAlign: 'left', color: '#666', fontWeight: '500' }}>Columna 3</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderTop: '0.5px solid #eee' }}>
-                  <td style={{ padding: '6px 8px', color: '#333' }}>usuario@email.com</td>
-                  <td style={{ padding: '6px 8px', color: '#333' }}>canil_principal</td>
-                  <td style={{ padding: '6px 8px', color: '#333' }}>Primer turno</td>
-                </tr>
-                <tr style={{ borderTop: '0.5px solid #eee' }}>
-                  <td style={{ padding: '6px 8px', color: '#333' }}>otro@email.com</td>
-                  <td style={{ padding: '6px 8px', color: '#333' }}>bombero</td>
-                  <td style={{ padding: '6px 8px', color: '#333' }}>Segundo turno</td>
-                </tr>
-              </tbody>
-            </table>
-            <div style={{ fontSize: '11px', color: '#aaa', marginTop: '8px' }}>
-              Servicios válidos: canil_principal · canil_secundario · bombero
-            </div>
+            {loadingUsuarios ? (
+              <div style={{ fontSize: '13px', color: '#aaa', textAlign: 'center', padding: '12px 0' }}>Cargando usuarios...</div>
+            ) : usuarios.length === 0 ? (
+              <div style={{ fontSize: '13px', color: '#aaa', textAlign: 'center', padding: '12px 0' }}>No hay usuarios registrados</div>
+            ) : (
+              usuarios.map((u, i) => (
+                <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: i < usuarios.length - 1 ? '0.5px solid #f0f0f0' : 'none' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#E1F5EE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', flexShrink: 0 }}>
+                    👤
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '14px', fontWeight: '500', color: '#1a1a1a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {u.full_name || '—'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#888', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {u.email}
+                    </div>
+                  </div>
+                  <span style={{ padding: '3px 10px', background: '#E1F5EE', color: '#085041', borderRadius: '20px', fontSize: '11px', fontWeight: '500', flexShrink: 0 }}>
+                    Activo
+                  </span>
+                </div>
+              ))
+            )}
           </div>
 
         </div>

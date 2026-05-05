@@ -20,6 +20,7 @@ const SERVICIOS = [
   { key: 'canil_principal', label: 'Canil Principal', emoji: '🏥', color: '#1D9E75', bg: '#E1F5EE' },
   { key: 'canil_secundario', label: 'Canil Secundario', emoji: '🏨', color: '#378ADD', bg: '#E6F1FB' },
   { key: 'bombero', label: 'Bombero', emoji: '🚒', color: '#E24B4A', bg: '#FCEBEB' },
+  { key: 'torre', label: 'Torre', emoji: '🗼', color: '#7C5CBF', bg: '#F0EBF9' },
 ]
 
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']

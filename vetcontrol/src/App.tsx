@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import CoordinatorDashboard from './pages/CoordinatorDashboard'
+import InstallPrompt from './components/InstallPrompt'
 
 type UserRole = 'admin' | 'coordinador' | 'empleado' | null
 
@@ -55,15 +56,15 @@ export default function App() {
   }
 
   // Sin sesión → mostrar login
-  if (!session) return <Login />
+  if (!session) return <><Login /><InstallPrompt /></>
 
   // Con sesión → mostrar pantalla según rol
   if (role === 'coordinador' || role === 'admin') {
     if (previewDashboard) {
-      return <Dashboard session={session} onBack={() => setPreviewDashboard(false)} />
+      return <><Dashboard session={session} onBack={() => setPreviewDashboard(false)} /><InstallPrompt /></>
     }
-    return <CoordinatorDashboard session={session} role={role} onPreviewDashboard={() => setPreviewDashboard(true)} />
+    return <><CoordinatorDashboard session={session} role={role} onPreviewDashboard={() => setPreviewDashboard(true)} /><InstallPrompt /></>
   }
 
-  return <Dashboard session={session} />
+  return <><Dashboard session={session} /><InstallPrompt /></>
 }
