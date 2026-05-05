@@ -10,7 +10,7 @@ export default function Login() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [exito, setExito] = useState('')
+  const [cuentaCreada, setCuentaCreada] = useState(false)
   const [logoOpen, setLogoOpen] = useState(false)
 
   const resetForm = () => {
@@ -19,7 +19,6 @@ export default function Login() {
     setPassword('')
     setConfirmPassword('')
     setError('')
-    setExito('')
   }
 
   const cambiarModo = (nuevoModo: 'login' | 'registro') => {
@@ -56,7 +55,6 @@ export default function Login() {
   const handleRegistro = async () => {
     setLoading(true)
     setError('')
-    setExito('')
 
     if (!fullName.trim()) {
       setError('El nombre completo es requerido')
@@ -95,9 +93,9 @@ export default function Login() {
       return
     }
 
-    setExito('Cuenta creada. Revisá tu correo para confirmar el registro antes de ingresar.')
     resetForm()
     setLoading(false)
+    setCuentaCreada(true)
   }
 
   return (
@@ -204,15 +202,10 @@ export default function Login() {
             </div>
           )}
 
-          {/* Mensajes de error / éxito */}
+          {/* Mensaje de error */}
           {error && (
             <div style={{ background: '#FCEBEB', color: '#A32D2D', padding: '10px 12px', borderRadius: '8px', fontSize: '13px', marginBottom: '12px' }}>
               {error}
-            </div>
-          )}
-          {exito && (
-            <div style={{ background: '#E1F5EE', color: '#085041', padding: '10px 12px', borderRadius: '8px', fontSize: '13px', marginBottom: '12px', lineHeight: '1.5' }}>
-              {exito}
             </div>
           )}
 
@@ -241,6 +234,47 @@ export default function Login() {
 
         </div>
       </div>
+
+      {/* Modal cuenta creada */}
+      {cuentaCreada && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '24px',
+        }}>
+          <div style={{
+            background: 'white', borderRadius: '24px', padding: '36px 28px',
+            maxWidth: '340px', width: '100%', textAlign: 'center',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.2)',
+          }}>
+            <div style={{
+              width: '72px', height: '72px', borderRadius: '50%',
+              background: '#E1F5EE', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: '36px', margin: '0 auto 20px',
+            }}>
+              ✅
+            </div>
+            <div style={{ fontSize: '20px', fontWeight: '600', color: '#0F6E56', marginBottom: '10px' }}>
+              ¡Usuario creado con éxito!
+            </div>
+            <div style={{ fontSize: '13px', color: '#666', lineHeight: '1.6', marginBottom: '24px' }}>
+              Tu cuenta fue creada correctamente. Revisá tu correo para confirmar el registro y luego podés ingresar.
+            </div>
+            <button
+              onClick={() => { setCuentaCreada(false); cambiarModo('login') }}
+              style={{
+                width: '100%', padding: '13px',
+                background: '#0F6E56', color: 'white',
+                border: 'none', borderRadius: '10px',
+                fontSize: '15px', fontWeight: '500', cursor: 'pointer',
+              }}
+            >
+              Ir a Ingresar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Lightbox logo */}
       {logoOpen && (
