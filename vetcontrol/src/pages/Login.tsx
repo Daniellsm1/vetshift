@@ -8,6 +8,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [logoOpen, setLogoOpen] = useState(false)
 
   const handleLogin = async () => {
     setLoading(true)
@@ -47,7 +48,12 @@ export default function Login() {
 
         {/* Header verde */}
         <div style={{ background: '#0F6E56', padding: '36px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <img src={dogLogo} alt="VETSHIFT" style={{ width: '96px', height: '96px', borderRadius: '22px', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.25)', marginBottom: '14px' }} />
+          <img
+            src={dogLogo}
+            alt="VETSHIFT"
+            onClick={() => setLogoOpen(true)}
+            style={{ width: '96px', height: '96px', borderRadius: '22px', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.25)', marginBottom: '14px', cursor: 'zoom-in' }}
+          />
           <h1 style={{ color: 'white', fontSize: '26px', fontWeight: '500', letterSpacing: '0.06em', margin: 0 }}>VETSHIFT</h1>
         </div>
 
@@ -113,6 +119,44 @@ export default function Login() {
         </div>
 
       </div>
+
+      {/* Lightbox */}
+      {logoOpen && (
+        <div
+          onClick={() => setLogoOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.85)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '24px',
+            cursor: 'zoom-out',
+          }}
+        >
+          <img
+            src={dogLogo}
+            alt="VETSHIFT"
+            style={{
+              maxWidth: '100%',
+              maxHeight: '90vh',
+              borderRadius: '16px',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+              objectFit: 'contain',
+            }}
+          />
+          <button
+            onClick={() => setLogoOpen(false)}
+            style={{
+              position: 'absolute', top: '16px', right: '16px',
+              background: 'rgba(255,255,255,0.15)', border: 'none',
+              borderRadius: '50%', width: '36px', height: '36px',
+              color: 'white', fontSize: '18px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   )
 }
