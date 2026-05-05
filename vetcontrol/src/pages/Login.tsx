@@ -3,18 +3,34 @@ import { supabase } from '../lib/supabase'
 import dogLogo from '../assets/logo.png'
 
 export default function Login() {
+  const [modo, setModo] = useState<'login' | 'registro'>('login')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [exito, setExito] = useState('')
   const [logoOpen, setLogoOpen] = useState(false)
+
+  const resetForm = () => {
+    setFullName('')
+    setEmail('')
+    setPassword('')
+    setConfirmPassword('')
+    setError('')
+    setExito('')
+  }
+
+  const cambiarModo = (nuevoModo: 'login' | 'registro') => {
+    resetForm()
+    setModo(nuevoModo)
+  }
 
   const handleLogin = async () => {
     setLoading(true)
     setError('')
 
-    // Validar que el nombre completo no esté vacío
     if (!fullName.trim()) {
       setError('El nombre completo es requerido')
       setLoading(false)
@@ -29,16 +45,58 @@ export default function Login() {
       return
     }
 
-    // Guardar el nombre completo en localStorage para usarlo después
     if (data.user) {
       localStorage.setItem('userFullName', fullName.trim())
-      
-      // Opcionalmente, también guardarlo en el perfil de Supabase
-      await supabase.auth.updateUser({
-        data: { full_name: fullName.trim() }
-      })
+      await supabase.auth.updateUser({ data: { full_name: fullName.trim() } })
     }
 
+    setLoading(false)
+  }
+
+  const handleRegistro = async () => {
+    setLoading(true)
+    setError('')
+    setExito('')
+
+    if (!fullName.trim()) {
+      setError('El nombre completo es requerido')
+      setLoading(false)
+      return
+    }
+    if (!email.trim()) {
+      setError('El correo electrónico es requerido')
+      setLoading(false)
+      return
+    }
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres')
+      setLoading(false)
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden')
+      setLoading(false)
+      return
+    }
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName.trim() },
+      },
+    })
+
+    if (error) {
+      setError(error.message === 'User already registered'
+        ? 'Este correo ya está registrado'
+        : `Error al registrar: ${error.message}`)
+      setLoading(false)
+      return
+    }
+
+    setExito('Cuenta creada. Revisá tu correo para confirmar el registro antes de ingresar.')
+    resetForm()
     setLoading(false)
   }
 
@@ -57,9 +115,38 @@ export default function Login() {
           <h1 style={{ color: 'white', fontSize: '26px', fontWeight: '500', letterSpacing: '0.06em', margin: 0 }}>VETSHIFT</h1>
         </div>
 
+        {/* Toggle login / registro */}
+        <div style={{ display: 'flex', borderBottom: '1px solid #eee' }}>
+          <button
+            onClick={() => cambiarModo('login')}
+            style={{
+              flex: 1, padding: '14px', border: 'none', background: 'none', cursor: 'pointer',
+              fontSize: '14px', fontWeight: '500',
+              color: modo === 'login' ? '#0F6E56' : '#aaa',
+              borderBottom: modo === 'login' ? '2px solid #0F6E56' : '2px solid transparent',
+              transition: 'all 0.2s',
+            }}
+          >
+            Ingresar
+          </button>
+          <button
+            onClick={() => cambiarModo('registro')}
+            style={{
+              flex: 1, padding: '14px', border: 'none', background: 'none', cursor: 'pointer',
+              fontSize: '14px', fontWeight: '500',
+              color: modo === 'registro' ? '#0F6E56' : '#aaa',
+              borderBottom: modo === 'registro' ? '2px solid #0F6E56' : '2px solid transparent',
+              transition: 'all 0.2s',
+            }}
+          >
+            Crear cuenta
+          </button>
+        </div>
+
         {/* Formulario */}
         <div style={{ padding: '28px' }}>
-          {/* NUEVO CAMPO: Nombre Completo */}
+
+          {/* Nombre completo */}
           <div style={{ marginBottom: '16px' }}>
             <label style={{ fontSize: '12px', color: '#666', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '6px' }}>
               Nombre Completo
@@ -73,6 +160,7 @@ export default function Login() {
             />
           </div>
 
+          {/* Email */}
           <div style={{ marginBottom: '16px' }}>
             <label style={{ fontSize: '12px', color: '#666', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '6px' }}>
               Correo electrónico
@@ -86,6 +174,7 @@ export default function Login() {
             />
           </div>
 
+          {/* Contraseña */}
           <div style={{ marginBottom: '16px' }}>
             <label style={{ fontSize: '12px', color: '#666', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '6px' }}>
               Contraseña
@@ -99,28 +188,61 @@ export default function Login() {
             />
           </div>
 
+          {/* Confirmar contraseña — solo en registro */}
+          {modo === 'registro' && (
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontSize: '12px', color: '#666', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '6px' }}>
+                Confirmar contraseña
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+          )}
+
+          {/* Mensajes de error / éxito */}
           {error && (
             <div style={{ background: '#FCEBEB', color: '#A32D2D', padding: '10px 12px', borderRadius: '8px', fontSize: '13px', marginBottom: '12px' }}>
               {error}
             </div>
           )}
+          {exito && (
+            <div style={{ background: '#E1F5EE', color: '#085041', padding: '10px 12px', borderRadius: '8px', fontSize: '13px', marginBottom: '12px', lineHeight: '1.5' }}>
+              {exito}
+            </div>
+          )}
 
-          <div style={{ fontSize: '12px', color: '#888', padding: '10px 12px', background: '#f5f5f0', borderRadius: '8px', borderLeft: '3px solid #1D9E75', marginBottom: '20px', lineHeight: '1.5' }}>
-            Ingresa tu <strong>nombre completo</strong> exactamente como aparece en el archivo de turnos.
-          </div>
+          {/* Hint */}
+          {modo === 'login' && (
+            <div style={{ fontSize: '12px', color: '#888', padding: '10px 12px', background: '#f5f5f0', borderRadius: '8px', borderLeft: '3px solid #1D9E75', marginBottom: '20px', lineHeight: '1.5' }}>
+              Ingresa tu <strong>nombre completo</strong> tal como aparece en el archivo de turnos.
+            </div>
+          )}
+          {modo === 'registro' && (
+            <div style={{ fontSize: '12px', color: '#888', padding: '10px 12px', background: '#f5f5f0', borderRadius: '8px', borderLeft: '3px solid #1D9E75', marginBottom: '20px', lineHeight: '1.5' }}>
+              Usá el <strong>nombre completo</strong> que el coordinador cargó en la planilla de turnos.
+            </div>
+          )}
 
+          {/* Botón principal */}
           <button
-            onClick={handleLogin}
+            onClick={modo === 'login' ? handleLogin : handleRegistro}
             disabled={loading}
             style={{ width: '100%', padding: '13px', background: loading ? '#ccc' : '#0F6E56', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '500', cursor: loading ? 'not-allowed' : 'pointer' }}
           >
-            {loading ? 'Ingresando...' : 'Ingresar'}
+            {loading
+              ? (modo === 'login' ? 'Ingresando...' : 'Creando cuenta...')
+              : (modo === 'login' ? 'Ingresar' : 'Crear cuenta')}
           </button>
-        </div>
 
+        </div>
       </div>
 
-      {/* Lightbox */}
+      {/* Lightbox logo */}
       {logoOpen && (
         <div
           onClick={() => setLogoOpen(false)}
@@ -135,13 +257,7 @@ export default function Login() {
           <img
             src={dogLogo}
             alt="VETSHIFT"
-            style={{
-              maxWidth: '100%',
-              maxHeight: '90vh',
-              borderRadius: '16px',
-              boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
-              objectFit: 'contain',
-            }}
+            style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '16px', boxShadow: '0 8px 40px rgba(0,0,0,0.6)', objectFit: 'contain' }}
           />
           <button
             onClick={() => setLogoOpen(false)}
